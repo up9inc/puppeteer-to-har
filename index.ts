@@ -10,7 +10,7 @@ export default class HARGenerator {
   private mimeTypeRegex = /((text\/css)|(image\/.*)|(application\/.*font.*)|(audio\/.*)|(video\/.*)|(font\/.*)|(application\/pdf)|(application\/ogg)|(text\/javascript)|(application\/.*javascript))/;
   private reqIdCookies: any = {};
   private reqIdTiming: any = {};
-  private entries = [];
+  private entries:Record<string, any>[] = [];
   options:HARGeneratorOptions = {
     disableEntriesSaveInMemory: false
   }
@@ -103,7 +103,7 @@ export default class HARGenerator {
 
   private processPostData(request: Request) {
     const mimeType = request.headers()['content-type'];
-    const paramsArr = request.postData().split('&');
+    const paramsArr = request.postData()!.split('&');
     const params = paramsArr.map((param: any) => {
       const splittedParam = param.split('=');
       return {name: splittedParam[0], value: splittedParam[1] || ''};
