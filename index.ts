@@ -1,21 +1,21 @@
 import {Request, Response} from "puppeteer";
 
-interface HARGeneratorOptions {
+interface PuppeteerHARGeneratorOptions {
   disableEntriesSaveInMemory: boolean,
   onEntry?: (entry: Record<string, any>) => void
 }
 
-export default class HARGenerator {
-  private requestTypeRegex = /\.(css|js|svg|png|jpg|jpeg|gif|ico|woff|woff2|map)/;
-  private mimeTypeRegex = /((text\/css)|(image\/.*)|(application\/.*font.*)|(audio\/.*)|(video\/.*)|(font\/.*)|(application\/pdf)|(application\/ogg)|(text\/javascript)|(application\/.*javascript))/;
+export default class PuppeteerHARGenerator {
+  private droppedRequestURLFileTypeRegex = /\.(css|js|svg|png|jpg|jpeg|gif|ico|woff|woff2|map)/;
+  private droppedResponseMimeTypeRegex = /((text\/css)|(image\/.*)|(application\/.*font.*)|(audio\/.*)|(video\/.*)|(font\/.*)|(application\/pdf)|(application\/ogg)|(text\/javascript)|(application\/.*javascript))/;
   private reqIdCookies: any = {};
   private reqIdTiming: any = {};
-  private entries:Record<string, any>[] = [];
-  options:HARGeneratorOptions = {
+  private entries: Record<string, any>[] = [];
+  options: PuppeteerHARGeneratorOptions = {
     disableEntriesSaveInMemory: false
   }
 
-  constructor(options?: HARGeneratorOptions) {
+  constructor(options?: PuppeteerHARGeneratorOptions) {
     if (options) {
       this.options = {...this.options, ...options};
     }
@@ -164,7 +164,7 @@ export default class HARGenerator {
     };
   }
 
-  async handlePage(page: any) {
+  async attachPage(page: any) {
     await page.setRequestInterception(true);
 
     page.on('request', async (request: any) => {
@@ -181,7 +181,7 @@ export default class HARGenerator {
       const request = response.request();
       const requestUrl = request.url();
       const mimeType = response.headers()['content-type'] || '';
-      if (requestUrl.match(this.requestTypeRegex) || mimeType.match(this.mimeTypeRegex)) {
+      if (requestUrl.match(this.droppedRequestURLFileTypeRegex) || mimeType.match(this.droppedResponseMimeTypeRegex)) {
         return;
       }
       // @ts-ignore
@@ -208,22 +208,20 @@ export default class HARGenerator {
 
   }
 
-  toHarFormat() {
-      if (this.options.disableEntriesSaveInMemory) {
-        throw new Error("Cannot generate har when using the disableEntriesSaveInMemory option");
-      }
+  generate() {
+    if (this.options.disableEntriesSaveInMemory) {
+      throw new Error("Cannot generate har when using the disableEntriesSaveInMemory option");
+    }
 
-      return {
-        log: {
-          entries: this.entries,
-          version: "1.2",
-          creator: {
-            "name": "UP9",
-            "version": "1.0.0"
-          }
+    return {
+      log: {
+        entries: this.entries,
+        version: "1.2",
+        creator: {
+          "name": "PuppeteerToHar",
+          "version": "1.0.0"
         }
       }
+    };
   }
-
-
 }
