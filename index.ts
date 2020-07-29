@@ -212,7 +212,6 @@ export default class PuppeteerHARGenerator {
       }
       try {
         this.entries.push(entry);
-        console.log(this.entries.length);
         this.options.onEntry?.(entry);
       } catch (error) {
         console.error(error);
