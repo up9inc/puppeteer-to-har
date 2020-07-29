@@ -209,6 +209,10 @@ export default class HARGenerator {
   }
 
   toHarFormat() {
+      if (this.options.disableEntriesSaveInMemory) {
+        throw new Error("Cannot generate har when using the disableEntriesSaveInMemory option");
+      }
+
       return {
         log: {
           entries: this.entries,
