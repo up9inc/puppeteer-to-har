@@ -15,7 +15,8 @@ import {Request, Response} from "puppeteer";
 
 interface PuppeteerHARGeneratorOptions {
   disableEntriesSaveInMemory: boolean,
-  onEntry?: (entry: Record<string, any>) => void
+  onEntry?: (entry: Record<string, any>) => void,
+  responseBodyTruncateSizeBytes?: number
 }
 
 export default class PuppeteerHARGenerator {
@@ -25,7 +26,8 @@ export default class PuppeteerHARGenerator {
   private reqIdTiming: any = {};
   private entries: Record<string, any>[] = [];
   options: PuppeteerHARGeneratorOptions = {
-    disableEntriesSaveInMemory: false
+    disableEntriesSaveInMemory: false,
+    responseBodyTruncateSizeBytes: 100 * 1024 // 100KB
   }
 
   constructor(options?: PuppeteerHARGeneratorOptions) {
@@ -138,6 +140,13 @@ export default class PuppeteerHARGenerator {
   }
 
   private buildHarEntry(timingsDiff: any, request: any, requestUrl: string, requestCookies: any, requestHeaders: any, queryString: any, response: any, responseCookies: any, responseHeaders: any, responseText: any, mimeType: string) {
+    let responseBody = Buffer.from(responseText).toString('base64');
+    const responseBodySize = Number(response.headers()['content-length']) || responseBody.length;
+
+    if (this.options.responseBodyTruncateSizeBytes && responseBodySize > this.options.responseBodyTruncateSizeBytes) {
+      responseBody = responseBody.slice(0, this.options.responseBodyTruncateSizeBytes);
+    }
+
     return {
       startedDateTime: new Date(),
       time: isNaN(timingsDiff) ? 0 : timingsDiff,
@@ -158,15 +167,15 @@ export default class PuppeteerHARGenerator {
         cookies: responseCookies,
         headers: responseHeaders,
         content: {
-          size: Number(response.headers()['content-length']) || -1,
+          size: responseBodySize,
           compression: 0,
           mimeType: mimeType,
-          text: Buffer.from(responseText).toString('base64'),
+          text: responseBody,
           encoding: 'base64'
         },
         redirectURL: response.headers().location || '',
         headersSize: JSON.stringify(response.headers()).length,
-        bodySize: Number(response.headers()['content-length']) || -1
+        bodySize: responseBodySize
       },
       cache: {},
       timings: {
