@@ -132,7 +132,12 @@ export default class PuppeteerHARGenerator {
 
   private async processResponseText(response: Response) {
     try {
-      const text = await response.text();
+      let text = await response.text();
+
+      if (this.options.responseBodyTruncateSizeBytes && text.length > this.options.responseBodyTruncateSizeBytes) {
+        text = text.slice(0, this.options.responseBodyTruncateSizeBytes);
+      }
+
       return text;
     } catch (error) {
       return '';
@@ -142,10 +147,6 @@ export default class PuppeteerHARGenerator {
   private buildHarEntry(timingsDiff: any, request: any, requestUrl: string, requestCookies: any, requestHeaders: any, queryString: any, response: any, responseCookies: any, responseHeaders: any, responseText: any, mimeType: string) {
     let responseBody = Buffer.from(responseText).toString('base64');
     const responseBodySize = Number(response.headers()['content-length']) || responseBody.length;
-
-    if (this.options.responseBodyTruncateSizeBytes && responseBodySize > this.options.responseBodyTruncateSizeBytes) {
-      responseBody = responseBody.slice(0, this.options.responseBodyTruncateSizeBytes);
-    }
 
     return {
       startedDateTime: new Date(),
